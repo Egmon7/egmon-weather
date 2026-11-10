@@ -32,8 +32,8 @@ const fragmentShader = `
     vec3 dir = normalize(vDir);
     float height = smoothstep(-0.2, 0.85, dir.y);
 
-    vec3 nightZenith = vec3(0.01, 0.02, 0.07);
-    vec3 nightHorizon = vec3(0.10, 0.14, 0.24);
+    vec3 nightZenith = vec3(0.05, 0.08, 0.22);
+    vec3 nightHorizon = vec3(0.35, 0.45, 0.70);
     vec3 dayZenith = vec3(0.10, 0.34, 0.82);
     vec3 dayHorizon = vec3(0.72, 0.84, 0.95);
     vec3 sunsetHorizon = vec3(0.96, 0.40, 0.18);
@@ -45,11 +45,11 @@ const fragmentShader = `
     float sunset = smoothstep(0.0, 0.22, uDayFactor) * (1.0 - smoothstep(0.42, 0.82, uDayFactor));
     col = mix(col, sunsetHorizon, sunset * (1.0 - height) * 0.9);
 
-    float bands = sin(dir.x * 22.0 + dir.z * 16.0) * 0.5 + 0.5;
-    float detail = sin(dir.x * 48.0 - dir.y * 12.0 + dir.z * 30.0) * 0.5 + 0.5;
-    float shape = smoothstep(0.42, 0.72, bands * 0.7 + detail * 0.3);
-    vec3 cloudCol = mix(vec3(0.45, 0.50, 0.58), vec3(0.86, 0.88, 0.92), uDayFactor);
-    float cloud = uCloud * mix(0.35, 1.0, shape) * smoothstep(0.05, 0.4, height);
+    float patch = sin(dir.x * 4.0 + dir.y * 2.5) * sin(dir.z * 3.5 + dir.y * 1.8);
+    float detail = sin(dir.x * 9.0 - dir.z * 7.0 + dir.y * 5.0);
+    float shape = smoothstep(0.28, 0.82, patch * 0.35 + detail * 0.15 + 0.5);
+    vec3 cloudCol = mix(vec3(0.38, 0.44, 0.54), vec3(0.90, 0.92, 0.95), uDayFactor);
+    float cloud = uCloud * mix(0.45, 1.0, shape) * smoothstep(0.02, 0.45, height);
     col = mix(col, cloudCol, cloud);
 
     float fog = step(1.5, uState) * (1.0 - step(2.5, uState));
@@ -61,6 +61,10 @@ const fragmentShader = `
 
     float snow = step(4.5, uState) * (1.0 - step(5.5, uState));
     col = mix(col, vec3(0.78, 0.82, 0.88), snow * 0.45);
+
+    float star = fract(sin(dot(floor(dir * 90.0), vec3(12.9898, 78.233, 45.164))) * 43758.5453);
+    float night = (1.0 - uDayFactor) * (1.0 - uCloud) * smoothstep(0.25, 0.7, height);
+    col += step(0.992, star) * night;
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -116,7 +120,7 @@ export function createSky(scene) {
   const sun = new THREE.DirectionalLight(0xfff1d6, 2.4)
   sun.position.set(30, 40, 16)
   scene.add(sun)
-  scene.add(new THREE.AmbientLight(0x8ea2c4, 0.18))
+  scene.add(new THREE.AmbientLight(0xb7c6dc, 0.55))
 
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(140, 48),

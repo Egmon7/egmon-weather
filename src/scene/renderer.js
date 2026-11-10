@@ -11,8 +11,8 @@ export function createRenderer(container) {
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 500)
-  camera.position.set(0, 1.4, 10)
-  camera.lookAt(0, 18, -28)
+  camera.position.set(0, 3, 16)
+  camera.lookAt(0, 9, -22)
 
   const clock = new THREE.Clock()
   const updaters = []

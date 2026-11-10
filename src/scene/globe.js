@@ -2,6 +2,12 @@ import * as THREE from 'three'
 
 const CAMERA_DIR = new THREE.Vector3(0, 0, 1)
 
+function earthTextureUrl() {
+  const base = import.meta.env && import.meta.env.BASE_URL
+  if (base) return `${base}textures/earth.jpg`
+  return new URL('../../public/textures/earth.jpg', import.meta.url).href
+}
+
 export function latLonToVector3(lat, lon, radius = 1) {
   const phi = THREE.MathUtils.degToRad(90 - lat)
   const theta = THREE.MathUtils.degToRad(lon + 180)
@@ -78,7 +84,7 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
   sun.position.set(2.5, 1.4, 4)
   scene.add(sun)
 
-  new THREE.TextureLoader().load('/textures/earth.jpg', (texture) => {
+  new THREE.TextureLoader().load(earthTextureUrl(), (texture) => {
     texture.colorSpace = THREE.SRGBColorSpace
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
     material.map = texture
