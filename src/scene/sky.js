@@ -45,9 +45,11 @@ const fragmentShader = `
     float sunset = smoothstep(0.0, 0.22, uDayFactor) * (1.0 - smoothstep(0.42, 0.82, uDayFactor));
     col = mix(col, sunsetHorizon, sunset * (1.0 - height) * 0.9);
 
-    float bands = sin(dir.x * 7.0 + dir.z * 5.0) * 0.5 + 0.5;
+    float bands = sin(dir.x * 22.0 + dir.z * 16.0) * 0.5 + 0.5;
+    float detail = sin(dir.x * 48.0 - dir.y * 12.0 + dir.z * 30.0) * 0.5 + 0.5;
+    float shape = smoothstep(0.42, 0.72, bands * 0.7 + detail * 0.3);
     vec3 cloudCol = mix(vec3(0.45, 0.50, 0.58), vec3(0.86, 0.88, 0.92), uDayFactor);
-    float cloud = uCloud * mix(0.55, 1.0, bands) * smoothstep(0.05, 0.4, height);
+    float cloud = uCloud * mix(0.35, 1.0, shape) * smoothstep(0.05, 0.4, height);
     col = mix(col, cloudCol, cloud);
 
     float fog = step(1.5, uState) * (1.0 - step(2.5, uState));

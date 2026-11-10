@@ -39,6 +39,12 @@ export function loadRecent() {
   emit()
 }
 
+export function removeRecent(id) {
+  state.recent = state.recent.filter((item) => item.id !== id)
+  localStorage.setItem(RECENT_KEY, JSON.stringify(state.recent))
+  emit()
+}
+
 function remember(place) {
   if (!place.name) return
   state.recent = [place, ...state.recent.filter((item) => item.id !== place.id)].slice(0, RECENT_MAX)

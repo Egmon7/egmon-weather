@@ -11,6 +11,15 @@ body,
   font-family: Inter, sans-serif;
 }
 
+button,
+a {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
 #landing .font-serif,
 #app .font-serif {
   font-family: "Instrument Serif", Georgia, serif;

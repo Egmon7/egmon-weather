@@ -1,5 +1,5 @@
 import { searchCities } from '../api/geocoding.js'
-import { addFavorite, removeFavorite, selectPlace, setView, state, subscribe } from '../state/store.js'
+import { addFavorite, removeFavorite, removeRecent, selectPlace, setView, state, subscribe } from '../state/store.js'
 
 const BUTTON_CLASS = 'rounded-full border border-white/10 bg-[#171d2e] px-3 py-2 text-left text-sm text-white hover:border-[#d9b780]'
 
@@ -25,6 +25,21 @@ function renderCityButtons(container, places) {
   }
 }
 
+function removeIcon() {
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  icon.setAttribute('viewBox', '0 0 16 16')
+  icon.setAttribute('class', 'h-3.5 w-3.5')
+  icon.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('d', 'M4 4l8 8M12 4l-8 8')
+  path.setAttribute('fill', 'none')
+  path.setAttribute('stroke', 'currentColor')
+  path.setAttribute('stroke-width', '1.6')
+  path.setAttribute('stroke-linecap', 'round')
+  icon.append(path)
+  return icon
+}
+
 function renderRecent(places) {
   const recent = document.querySelector('#recent')
   recent.replaceChildren()
@@ -36,7 +51,24 @@ function renderRecent(places) {
   const list = document.createElement('div')
   list.className = 'flex flex-wrap gap-2'
   recent.append(title, list)
-  renderCityButtons(list, places)
+
+  for (const place of places) {
+    const row = document.createElement('div')
+    row.className = 'inline-flex items-center rounded-full border border-white/10 bg-[#171d2e] pl-3'
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'py-2 text-left text-sm text-white'
+    button.textContent = placeLabel(place)
+    button.addEventListener('click', () => selectPlace(place))
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.className = 'rounded-full p-2 text-[#8b95a8] hover:text-white'
+    remove.setAttribute('aria-label', `Retirer ${placeLabel(place)}`)
+    remove.append(removeIcon())
+    remove.addEventListener('click', () => removeRecent(place.id))
+    row.append(button, remove)
+    list.append(row)
+  }
 }
 
 function renderFavorites(places) {
