@@ -1,6 +1,13 @@
 import * as THREE from 'three'
+import { maxPixelRatio, watchQuality } from './quality.js'
 
 const CAMERA_DIR = new THREE.Vector3(0, 0, 1)
+const WORLD_UP = new THREE.Vector3(0, 1, 0)
+const FLY_SECONDS = 1.2
+
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2
+}
 
 function earthTextureUrl() {
   const base = import.meta.env && import.meta.env.BASE_URL
@@ -20,7 +27,6 @@ export function latLonToVector3(lat, lon, radius = 1) {
 
 export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed = 0.12, initialYaw = 0.55, onSelect = null, onFlyDone = null } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setClearColor(0x000000, 0)
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.domElement.style.width = '100%'
@@ -38,11 +44,7 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
   globe.rotation.y = initialYaw
   scene.add(globe)
 
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x8eb4d6,
-    roughness: 0.9,
-    metalness: 0,
-  })
+  const material = new THREE.MeshBasicMaterial({ color: 0x8eb4d6 })
   globe.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), material))
   globe.add(new THREE.Mesh(
     new THREE.SphereGeometry(1.08, 64, 64),
@@ -69,9 +71,15 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
   ))
 
   const marker = new THREE.Mesh(
-    new THREE.SphereGeometry(0.012, 18, 18),
+    new THREE.SphereGeometry(0.022, 18, 18),
     new THREE.MeshBasicMaterial({ color: 0xd9b780 }),
   )
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.032, 0.048, 28),
+    new THREE.MeshBasicMaterial({ color: 0xd9b780, side: THREE.DoubleSide, depthTest: false }),
+  )
+  ring.position.z = 0.024
+  marker.add(ring)
   marker.visible = false
   globe.add(marker)
 
@@ -93,8 +101,10 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
   })
 
   function resize() {
-    const width = container.clientWidth || 1
-    const height = container.clientHeight || 1
+    const width = container.clientWidth
+    const height = container.clientHeight
+    if (width < 2 || height < 2) return
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxPixelRatio()))
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     renderer.setSize(width, height, false)
@@ -104,18 +114,10 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
   let mode = 'spin'
   let targetQuat = null
   let flyNotified = false
+  let flyElapsed = 0
+  const flyFromPos = new THREE.Vector3()
+  const flyFromQuat = new THREE.Quaternion()
   const clock = new THREE.Clock()
-
-  function arrived() {
-    if (mode !== 'aim' || flyNotified) return
-    const aimed = !targetQuat || globe.quaternion.angleTo(targetQuat) < 0.02
-    const zoomed = camera.position.distanceTo(targetPosition) < 0.06
-    if (!aimed || !zoomed) return
-    if (targetQuat) globe.quaternion.copy(targetQuat)
-    mode = 'hold'
-    flyNotified = true
-    onFlyDone?.()
-  }
 
   function frame() {
     if (!running) return
@@ -125,14 +127,23 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
       return
     }
     const delta = Math.min(clock.getDelta(), 0.05)
-    camera.position.lerp(targetPosition, 1 - Math.exp(-2.4 * delta))
-    camera.lookAt(0, 0, 0)
-    if (mode === 'spin') {
-      globe.rotation.y += delta * idleSpeed
-    } else if (mode === 'aim' && targetQuat) {
-      globe.quaternion.slerp(targetQuat, 1 - Math.exp(-3.4 * delta))
-      arrived()
+    if (mode === 'aim' && targetQuat) {
+      flyElapsed = Math.min(FLY_SECONDS, flyElapsed + delta)
+      const eased = easeInOut(flyElapsed / FLY_SECONDS)
+      camera.position.lerpVectors(flyFromPos, targetPosition, eased)
+      globe.quaternion.slerpQuaternions(flyFromQuat, targetQuat, eased)
+      if (flyElapsed >= FLY_SECONDS && !flyNotified) {
+        camera.position.copy(targetPosition)
+        globe.quaternion.copy(targetQuat)
+        mode = 'hold'
+        flyNotified = true
+        onFlyDone?.()
+      }
+    } else {
+      camera.position.lerp(targetPosition, 1 - Math.exp(-2.4 * delta))
+      if (mode === 'spin') globe.rotateOnWorldAxis(WORLD_UP, delta * idleSpeed)
     }
+    camera.lookAt(0, 0, 0)
     renderer.render(scene, camera)
   }
 
@@ -150,6 +161,7 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
 
   renderer.domElement.addEventListener('pointerdown', onPointerDown)
   window.addEventListener('resize', resize)
+  const stopQuality = watchQuality(() => resize())
   resize()
 
   return {
@@ -165,17 +177,28 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
       running = false
       renderer.domElement.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('resize', resize)
+      stopQuality()
       renderer.dispose()
       renderer.forceContextLoss()
       renderer.domElement.remove()
     },
+    showPlanet() {
+      targetPosition.copy(restPosition)
+      targetQuat = null
+      mode = 'spin'
+      flyNotified = true
+    },
     flyTo(lat, lon, place = null) {
       const point = latLonToVector3(lat, lon, 1)
-      marker.position.copy(point).multiplyScalar(1.035)
+      marker.position.copy(point).multiplyScalar(1.03)
+      marker.lookAt(0, 0, 0)
       marker.visible = true
       marker.userData.place = place
       targetQuat = new THREE.Quaternion().setFromUnitVectors(point.clone().normalize(), CAMERA_DIR)
       if (zoomZ != null) targetPosition.set(0, 0, zoomZ)
+      flyFromPos.copy(camera.position)
+      flyFromQuat.copy(globe.quaternion)
+      flyElapsed = 0
       flyNotified = false
       mode = 'aim'
     },
@@ -202,7 +225,7 @@ let appEarth = null
 export function mountGlobe(container, hooks = {}) {
   appEarth = mountEarth(container, {
     cameraZ: 4.35,
-    zoomZ: 2.15,
+    zoomZ: 2.55,
     idleSpeed: 0.18,
     initialYaw: 0.4,
     onSelect: hooks.onSelect,
@@ -213,6 +236,10 @@ export function mountGlobe(container, hooks = {}) {
 
 export function flyTo(lat, lon, place = null) {
   appEarth?.flyTo(lat, lon, place)
+}
+
+export function showPlanet() {
+  appEarth?.showPlanet()
 }
 
 export function setFavoriteMarkers(places) {

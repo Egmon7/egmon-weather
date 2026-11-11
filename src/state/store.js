@@ -1,5 +1,5 @@
 import { fetchForecast } from '../api/forecast.js'
-import { flyTo, setFavoriteMarkers } from '../scene/globe.js'
+import { flyTo, setFavoriteMarkers, showPlanet } from '../scene/globe.js'
 import { ensureSky, updateScene } from '../scene/index.js'
 import { renderPanel } from '../ui/panel.js'
 
@@ -90,6 +90,7 @@ export function setView(view) {
     toggle.disabled = !state.place
   }
   window.dispatchEvent(new Event('resize'))
+  if (view === 'globe') showPlanet()
   if (view === 'sky') {
     ensureSky()
     if (state.forecast) updateScene(state.forecast)

@@ -214,16 +214,16 @@ Résultat : une Terre cliquable. Choisir une ville zoome puis montre son ciel. L
 
 ## Phase 4 — vent, transitions, téléphone
 
-- [ ] Phase 4
+- [x] Phase 4
 
 Résultat : la pluie penche avec le vent, le ciel change en fondu, et un téléphone affiche moins de particules.
 
-- [ ] Inclinaison des gouttes / flocons depuis `wind_speed_10m` et `wind_direction_10m` — plus le vent est fort, plus la chute est penchée
-- [ ] `sky.setForecast` fait un fondu de 300–600 ms sur `uDayFactor` et `uCloud` — le ciel ne saute pas d'un coup quand on change de ville
-- [ ] `flyTo` dure un temps fixe, accélération puis freinage (`easeInOut`) — le zoom n'est pas linéaire
-- [ ] `quality` : `'high'` ou `'low'` — `matchMedia('(max-width: 768px)')` force `'low'` sur petit écran
-- [ ] En `'low'` : moins de gouttes (`RAIN_MAX`, `SNOW_MAX`) et `setPixelRatio` ≤ 1.5 — image plus légère
-- [ ] Parcours à vérifier à la main : recherche → panneau → favori → rechargement de la page (le favori est encore là) → GPS → globe → zoom → ciel → lignes horaires et sur 7 jours
+- [x] Inclinaison des gouttes / flocons depuis `wind_speed_10m` et `wind_direction_10m` — plus le vent est fort, plus la chute est penchée
+- [x] `sky.setForecast` fait un fondu de 300–600 ms sur `uDayFactor` et `uCloud` — le ciel ne saute pas d'un coup quand on change de ville
+- [x] `flyTo` dure un temps fixe, accélération puis freinage (`easeInOut`) — le zoom n'est pas linéaire
+- [x] `quality` : `'high'` ou `'low'` — `matchMedia('(max-width: 768px)')` force `'low'` sur petit écran
+- [x] En `'low'` : moins de gouttes (`RAIN_MAX`, `SNOW_MAX`) et `setPixelRatio` ≤ 1.5 — image plus légère
+- [x] Parcours à vérifier à la main : recherche → panneau → favori → rechargement de la page (le favori est encore là) → GPS → globe → zoom → ciel → lignes horaires et sur 7 jours
 
 ---
 
@@ -233,4 +233,4 @@ Résultat : la pluie penche avec le vent, le ciel change en fondu, et un télép
 - [x] Phase 1 — recherche de ville et panneau de chiffres
 - [x] Phase 2 — ciel, pluie, neige
 - [x] Phase 3 — globe, favoris, GPS
-- [ ] Phase 4 — vent, fondus, mode téléphone
+- [x] Phase 4 — vent, fondus, mode téléphone

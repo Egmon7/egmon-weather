@@ -1,5 +1,5 @@
-import { weatherCodeToState } from '../lib/weatherCodes.js'
 import { createPrecipitation } from './precipitation.js'
+import { currentQuality, watchQuality } from './quality.js'
 import { createRenderer } from './renderer.js'
 import { createSky } from './sky.js'
 
@@ -30,7 +30,16 @@ export function mountScene() {
   const view = createRenderer(container)
   const sky = createSky(view.scene)
   const precipitation = createPrecipitation(view.scene)
-  view.onFrame((delta) => precipitation.update(delta))
+  const applyQuality = (quality) => {
+    view.setQuality(quality)
+    precipitation.setQuality(quality)
+  }
+  applyQuality(currentQuality())
+  watchQuality(applyQuality)
+  view.onFrame((delta) => {
+    sky.tick(delta)
+    precipitation.update(delta)
+  })
   view.start()
   api = { sky, precipitation }
 }
@@ -38,5 +47,5 @@ export function mountScene() {
 export function updateScene(forecast) {
   if (!api || !forecast?.current) return
   api.sky.setForecast(forecast)
-  api.precipitation.setState(weatherCodeToState(forecast.current.weather_code))
+  api.precipitation.setForecast(forecast)
 }

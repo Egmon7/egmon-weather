@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { weatherCodeToState } from '../lib/weatherCodes.js'
+import { createCity } from './city.js'
 
 const STATE_ID = {
   clear: 0,
@@ -26,6 +27,9 @@ const fragmentShader = `
   uniform float uDayFactor;
   uniform float uCloud;
   uniform float uState;
+  uniform float uTime;
+  uniform float uWind;
+  uniform float uFlash;
   varying vec3 vDir;
 
   void main() {
@@ -45,9 +49,10 @@ const fragmentShader = `
     float sunset = smoothstep(0.0, 0.22, uDayFactor) * (1.0 - smoothstep(0.42, 0.82, uDayFactor));
     col = mix(col, sunsetHorizon, sunset * (1.0 - height) * 0.9);
 
-    float patch = sin(dir.x * 4.0 + dir.y * 2.5) * sin(dir.z * 3.5 + dir.y * 1.8);
-    float detail = sin(dir.x * 9.0 - dir.z * 7.0 + dir.y * 5.0);
-    float shape = smoothstep(0.28, 0.82, patch * 0.35 + detail * 0.15 + 0.5);
+    float scroll = uTime * (0.15 + uWind * 0.45);
+    float cloudBand = sin(dir.x * 4.0 + scroll) * sin(dir.z * 3.5 + dir.y * 1.8 + scroll * 0.7);
+    float detail = sin(dir.x * 9.0 - dir.z * 7.0 + dir.y * 5.0 + scroll * 1.4);
+    float shape = smoothstep(0.28, 0.82, cloudBand * 0.35 + detail * 0.15 + 0.5);
     vec3 cloudCol = mix(vec3(0.38, 0.44, 0.54), vec3(0.90, 0.92, 0.95), uDayFactor);
     float cloud = uCloud * mix(0.45, 1.0, shape) * smoothstep(0.02, 0.45, height);
     col = mix(col, cloudCol, cloud);
@@ -55,9 +60,9 @@ const fragmentShader = `
     float fog = step(1.5, uState) * (1.0 - step(2.5, uState));
     col = mix(col, vec3(0.72, 0.75, 0.78), fog * 0.8);
 
-    float storm = step(2.5, uState) * (1.0 - step(4.5, uState));
-    storm = max(storm, step(5.5, uState));
-    col *= mix(1.0, 0.42, storm);
+    float thunder = step(5.5, uState);
+    col *= mix(1.0, 0.55, thunder);
+    col += vec3(0.9, 0.94, 1.0) * uFlash * (0.25 + 0.75 * height);
 
     float snow = step(4.5, uState) * (1.0 - step(5.5, uState));
     col = mix(col, vec3(0.78, 0.82, 0.88), snow * 0.45);
@@ -102,6 +107,9 @@ export function createSky(scene) {
     uDayFactor: { value: 0.65 },
     uCloud: { value: 0.2 },
     uState: { value: 0 },
+    uTime: { value: 0 },
+    uWind: { value: 0 },
+    uFlash: { value: 0 },
   }
 
   const dome = new THREE.Mesh(
@@ -120,14 +128,33 @@ export function createSky(scene) {
   const sun = new THREE.DirectionalLight(0xfff1d6, 2.4)
   sun.position.set(30, 40, 16)
   scene.add(sun)
-  scene.add(new THREE.AmbientLight(0xb7c6dc, 0.55))
+  const hemi = new THREE.HemisphereLight(0xc5d7ee, 0x3d4638, 0.85)
+  scene.add(hemi)
+  scene.add(new THREE.AmbientLight(0xd5deea, 0.62))
+  const city = createCity(scene)
 
-  const ground = new THREE.Mesh(
-    new THREE.CircleGeometry(140, 48),
-    new THREE.MeshStandardMaterial({ color: 0x1b2836, roughness: 1, metalness: 0 }),
+  const bolt = new THREE.Line(
+    new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({ color: 0xf4f8ff, transparent: true, opacity: 0 }),
   )
-  ground.rotation.x = -Math.PI / 2
-  scene.add(ground)
+  scene.add(bolt)
+  let flash = 0
+  let nextBolt = 1.6
+
+  function strike() {
+    const points = []
+    let x = (Math.random() - 0.5) * 8
+    let y = 18
+    const z = -8 - Math.random() * 16
+    points.push(new THREE.Vector3(x, y, z))
+    for (let i = 0; i < 7; i += 1) {
+      x += (Math.random() - 0.5) * 2.4
+      y -= 2.1
+      points.push(new THREE.Vector3(x, y, z + (Math.random() - 0.5) * 0.8))
+    }
+    bolt.geometry.dispose()
+    bolt.geometry = new THREE.BufferGeometry().setFromPoints(points)
+  }
 
   function placeSun(dayFactor, now, sunrise, sunset) {
     let progress = dayFactor
@@ -139,12 +166,30 @@ export function createSky(scene) {
     const eastWest = Math.cos(clamped * Math.PI)
     const height = dayFactor <= 0 ? -12 : 4 + elevation * 48
     sun.position.set(eastWest * 36, height, 18)
-    sun.intensity = 0.15 + dayFactor * 2.8
+    sun.intensity = 0.2 + dayFactor * 2.6
     sun.color.setHSL(0.08 + dayFactor * 0.04, 0.75, 0.5 + dayFactor * 0.12)
-    ground.material.color.set(dayFactor > 0.35 ? 0x243628 : 0x1b2836)
+    hemi.intensity = 0.22 + dayFactor * 0.7
   }
 
   placeSun(uniforms.uDayFactor.value, null, null, null)
+
+  const FADE_SECONDS = 0.45
+  let fadeFromDay = uniforms.uDayFactor.value
+  let fadeFromCloud = uniforms.uCloud.value
+  let fadeToDay = fadeFromDay
+  let fadeToCloud = fadeFromCloud
+  let fadeLeft = 0
+  let sunNow = null
+  let sunRise = null
+  let sunSet = null
+  let weatherState = 'clear'
+
+  function applyLook(dayFactor) {
+    placeSun(dayFactor, sunNow, sunRise, sunSet)
+    city.setWeather({ dayFactor, state: weatherState })
+    scene.background = new THREE.Color(dayFactor > 0.45 ? 0x9ebfe6 : 0x121a2b)
+    if (scene.fog) scene.fog.color.set(dayFactor > 0.4 ? 0xc5ced6 : 0x1a2433)
+  }
 
   return {
     setForecast(forecast) {
@@ -157,10 +202,41 @@ export function createSky(scene) {
       const cloud = Math.min(1, Math.max(0, Number(current.cloud_cover ?? 0) / 100))
       const stateName = weatherCodeToState(current.weather_code)
 
-      uniforms.uDayFactor.value = dayFactor
-      uniforms.uCloud.value = cloud
+      fadeFromDay = uniforms.uDayFactor.value
+      fadeFromCloud = uniforms.uCloud.value
+      fadeToDay = dayFactor
+      fadeToCloud = cloud
+      fadeLeft = FADE_SECONDS
+      sunNow = now
+      sunRise = sunrise
+      sunSet = sunset
+      weatherState = stateName
       uniforms.uState.value = STATE_ID[stateName] ?? 1
-      placeSun(dayFactor, now, sunrise, sunset)
+      uniforms.uWind.value = Math.min(Number(current.wind_speed_10m ?? 0), 90) / 30
+    },
+    tick(delta) {
+      uniforms.uTime.value += delta
+      if (fadeLeft > 0) {
+        fadeLeft = Math.max(0, fadeLeft - delta)
+        const t = 1 - fadeLeft / FADE_SECONDS
+        const eased = t * t * (3 - 2 * t)
+        uniforms.uDayFactor.value = fadeFromDay + (fadeToDay - fadeFromDay) * eased
+        uniforms.uCloud.value = fadeFromCloud + (fadeToCloud - fadeFromCloud) * eased
+        applyLook(uniforms.uDayFactor.value)
+      }
+      if (uniforms.uState.value === 6) {
+        nextBolt -= delta
+        if (nextBolt <= 0) {
+          nextBolt = 1.2 + Math.random() * 2.2
+          flash = 1
+          strike()
+        }
+      } else {
+        nextBolt = 1.4
+      }
+      flash = Math.max(0, flash - delta * 3.4)
+      uniforms.uFlash.value = flash
+      bolt.material.opacity = flash
     },
   }
 }

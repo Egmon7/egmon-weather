@@ -1,9 +1,10 @@
 import * as THREE from 'three'
+import { currentQuality, maxPixelRatio } from './quality.js'
 
 export function createRenderer(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setClearColor(0x07101c, 1)
+  let quality = currentQuality()
   renderer.domElement.style.display = 'block'
   renderer.domElement.style.width = '100%'
   renderer.domElement.style.height = '100%'
@@ -11,16 +12,21 @@ export function createRenderer(container) {
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 500)
-  camera.position.set(0, 3, 16)
-  camera.lookAt(0, 9, -22)
+  camera.position.set(0, 5.2, 16)
+  camera.lookAt(0, 2.2, -6)
 
   const clock = new THREE.Clock()
   const updaters = []
   let running = false
 
+  function applyRatio() {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxPixelRatio(quality)))
+  }
+
   function resize() {
     const width = container.clientWidth || window.innerWidth
     const height = container.clientHeight || window.innerHeight
+    applyRatio()
     camera.aspect = width / Math.max(height, 1)
     camera.updateProjectionMatrix()
     renderer.setSize(width, height, false)
@@ -47,6 +53,10 @@ export function createRenderer(container) {
     renderer,
     onFrame(update) {
       updaters.push(update)
+    },
+    setQuality(next) {
+      quality = next === 'low' ? 'low' : 'high'
+      resize()
     },
     start() {
       if (running) return
