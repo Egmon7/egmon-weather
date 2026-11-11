@@ -1,4 +1,5 @@
 const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search'
+const REVERSE_URL = 'https://api.bigdatacloud.net/data/reverse-geocode-client'
 
 function fold(value) {
   return value
@@ -33,6 +34,30 @@ async function request(name) {
     longitude: place.longitude,
     timezone: place.timezone,
   }))
+}
+
+export async function reversePlace(latitude, longitude) {
+  const url = new URL(REVERSE_URL)
+  url.searchParams.set('latitude', String(latitude))
+  url.searchParams.set('longitude', String(longitude))
+  url.searchParams.set('localityLanguage', 'fr')
+
+  const response = await fetch(url)
+  if (!response.ok) return null
+
+  const data = await response.json()
+  const name = data.city || data.locality || data.principalSubdivision || null
+  if (!name) return null
+
+  return {
+    id: data.localityInfo?.administrative?.find((item) => item.adminLevel === 8)?.geonameId ?? null,
+    name,
+    country: data.countryName ?? null,
+    admin1: data.principalSubdivision ?? null,
+    latitude,
+    longitude,
+    timezone: null,
+  }
 }
 
 export async function searchCities(name) {

@@ -1,4 +1,4 @@
-import { searchCities } from '../api/geocoding.js'
+import { reversePlace, searchCities } from '../api/geocoding.js'
 import { addFavorite, removeFavorite, removeRecent, selectPlace, setView, state, subscribe } from '../state/store.js'
 
 const BUTTON_CLASS = 'rounded-full border border-white/10 bg-[#171d2e] px-3 py-2 text-left text-sm text-white hover:border-[#d9b780]'
@@ -134,12 +134,15 @@ export function mountSearch() {
       return
     }
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        selectPlace({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          name: null,
-        })
+      async (position) => {
+        const latitude = position.coords.latitude
+        const longitude = position.coords.longitude
+        try {
+          const place = await reversePlace(latitude, longitude)
+          selectPlace(place ?? { latitude, longitude, name: null })
+        } catch {
+          selectPlace({ latitude, longitude, name: null })
+        }
       },
       () => {
         error.textContent = 'Localisation refusée.'
