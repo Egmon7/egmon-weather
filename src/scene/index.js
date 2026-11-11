@@ -44,8 +44,8 @@ export function mountScene() {
   api = { sky, precipitation }
 }
 
-export function updateScene(forecast) {
+export function updateScene(forecast, place = null) {
   if (!api || !forecast?.current) return
-  api.sky.setForecast(forecast)
+  api.sky.setForecast(forecast, place)
   api.precipitation.setForecast(forecast)
 }

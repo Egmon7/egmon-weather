@@ -117,16 +117,15 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
   let flyElapsed = 0
   const flyFromPos = new THREE.Vector3()
   const flyFromQuat = new THREE.Quaternion()
-  const clock = new THREE.Clock()
+  const timer = new THREE.Timer()
+  timer.connect(document)
 
-  function frame() {
+  function frame(now) {
     if (!running) return
     requestAnimationFrame(frame)
-    if (document.visibilityState === 'hidden') {
-      clock.getDelta()
-      return
-    }
-    const delta = Math.min(clock.getDelta(), 0.05)
+    timer.update(now)
+    if (document.visibilityState === 'hidden') return
+    const delta = Math.min(timer.getDelta(), 0.05)
     if (mode === 'aim' && targetQuat) {
       flyElapsed = Math.min(FLY_SECONDS, flyElapsed + delta)
       const eased = easeInOut(flyElapsed / FLY_SECONDS)
@@ -178,6 +177,7 @@ export function mountEarth(container, { cameraZ = 3.45, zoomZ = null, idleSpeed 
       renderer.domElement.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('resize', resize)
       stopQuality()
+      timer.disconnect()
       renderer.dispose()
       renderer.forceContextLoss()
       renderer.domElement.remove()

@@ -15,7 +15,8 @@ export function createRenderer(container) {
   camera.position.set(0, 5.2, 16)
   camera.lookAt(0, 2.2, -6)
 
-  const clock = new THREE.Clock()
+  const timer = new THREE.Timer()
+  timer.connect(document)
   const updaters = []
   let running = false
 
@@ -32,14 +33,12 @@ export function createRenderer(container) {
     renderer.setSize(width, height, false)
   }
 
-  function frame() {
+  function frame(now) {
     if (!running) return
     requestAnimationFrame(frame)
-    if (document.visibilityState === 'hidden') {
-      clock.getDelta()
-      return
-    }
-    const delta = Math.min(clock.getDelta(), 0.05)
+    timer.update(now)
+    if (document.visibilityState === 'hidden') return
+    const delta = Math.min(timer.getDelta(), 0.05)
     for (const update of updaters) update(delta)
     renderer.render(scene, camera)
   }

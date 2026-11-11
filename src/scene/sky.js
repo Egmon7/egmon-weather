@@ -58,14 +58,14 @@ const fragmentShader = `
     col = mix(col, cloudCol, cloud);
 
     float fog = step(1.5, uState) * (1.0 - step(2.5, uState));
-    col = mix(col, vec3(0.72, 0.75, 0.78), fog * 0.8);
+    col = mix(col, vec3(0.78, 0.81, 0.84), fog * 0.94);
 
     float thunder = step(5.5, uState);
-    col *= mix(1.0, 0.55, thunder);
-    col += vec3(0.9, 0.94, 1.0) * uFlash * (0.25 + 0.75 * height);
+    col *= mix(1.0, 0.38, thunder);
+    col += vec3(0.95, 0.97, 1.0) * uFlash;
 
     float snow = step(4.5, uState) * (1.0 - step(5.5, uState));
-    col = mix(col, vec3(0.78, 0.82, 0.88), snow * 0.45);
+    col = mix(col, vec3(0.86, 0.90, 0.95), snow * 0.72);
 
     float star = fract(sin(dot(floor(dir * 90.0), vec3(12.9898, 78.233, 45.164))) * 43758.5453);
     float night = (1.0 - uDayFactor) * (1.0 - uCloud) * smoothstep(0.25, 0.7, height);
@@ -192,7 +192,7 @@ export function createSky(scene) {
   }
 
   return {
-    setForecast(forecast) {
+    setForecast(forecast, place = null) {
       const current = forecast.current ?? {}
       const daily = forecast.daily ?? {}
       const now = minutesOf(current.time)
@@ -211,6 +211,7 @@ export function createSky(scene) {
       sunRise = sunrise
       sunSet = sunset
       weatherState = stateName
+      if (place) city.setPlace(place)
       uniforms.uState.value = STATE_ID[stateName] ?? 1
       uniforms.uWind.value = Math.min(Number(current.wind_speed_10m ?? 0), 90) / 30
     },

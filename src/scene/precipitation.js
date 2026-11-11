@@ -111,7 +111,7 @@ export function createPrecipitation(scene) {
 
     applyCounts()
     gusts.count = mode === 'none' && wind.length() > 0.35 ? GUST_MAX : 0
-    scene.fog.density = state === 'fog' ? 0.07 : mode === 'rain' ? 0.01 : state === 'snow' ? 0.016 : 0
+    scene.fog.density = state === 'fog' ? 0.12 : state === 'thunder' ? 0.03 : mode === 'rain' ? 0.012 : state === 'snow' ? 0.022 : 0
   }
 
   function wrap(item, top) {

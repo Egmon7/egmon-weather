@@ -27,9 +27,25 @@ function mountStars(canvas) {
     })
   }
 
+  const meteors = []
   let running = false
   let width = 0
   let height = 0
+  let last = 0
+  let nextMeteor = 2.2
+  let primed = false
+
+  function spawnMeteor() {
+    const fromLeft = Math.random() > 0.5
+    meteors.push({
+      x: fromLeft ? -40 : width * (0.15 + Math.random() * 0.7),
+      y: Math.random() * height * 0.45,
+      vx: (fromLeft ? 1 : -1) * (520 + Math.random() * 280),
+      vy: 180 + Math.random() * 140,
+      life: 0,
+      max: 1.8,
+    })
+  }
 
   function draw(time) {
     const nextWidth = window.innerWidth
@@ -63,6 +79,46 @@ function mountStars(canvas) {
       context.lineTo(x + arm, y)
       context.moveTo(x, y - arm)
       context.lineTo(x, y + arm)
+      context.stroke()
+    }
+    if (!primed && width > 0) {
+      primed = true
+      spawnMeteor()
+    }
+    const seconds = time / 1000
+    const step = last ? Math.min(0.05, seconds - last) : 0
+    last = seconds
+    nextMeteor -= step
+    if (nextMeteor <= 0) {
+      spawnMeteor()
+      nextMeteor = 1.8 + Math.random() * 1.6
+    }
+    for (let index = meteors.length - 1; index >= 0; index -= 1) {
+      const meteor = meteors[index]
+      meteor.life += step
+      meteor.x += meteor.vx * step
+      meteor.y += meteor.vy * step
+      const fade = 1 - meteor.life / meteor.max
+      if (fade <= 0) {
+        meteors.splice(index, 1)
+        continue
+      }
+      const tail = 140
+      const angle = Math.atan2(meteor.vy, meteor.vx)
+      const gradient = context.createLinearGradient(
+        meteor.x,
+        meteor.y,
+        meteor.x - Math.cos(angle) * tail,
+        meteor.y - Math.sin(angle) * tail,
+      )
+      gradient.addColorStop(0, `rgba(255, 252, 245, ${0.95 * fade})`)
+      gradient.addColorStop(1, 'rgba(217, 183, 128, 0)')
+      context.globalAlpha = 1
+      context.strokeStyle = gradient
+      context.lineWidth = 2
+      context.beginPath()
+      context.moveTo(meteor.x, meteor.y)
+      context.lineTo(meteor.x - Math.cos(angle) * tail, meteor.y - Math.sin(angle) * tail)
       context.stroke()
     }
     context.globalAlpha = 1

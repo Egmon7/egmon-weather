@@ -93,7 +93,7 @@ export function setView(view) {
   if (view === 'globe') showPlanet()
   if (view === 'sky') {
     ensureSky()
-    if (state.forecast) updateScene(state.forecast)
+    if (state.forecast) updateScene(state.forecast, state.place)
   }
   emit()
 }
@@ -120,7 +120,7 @@ export async function selectPlace(place) {
     state.forecast = forecast
     state.status = 'ready'
     renderPanel(forecast)
-    updateScene(forecast)
+    updateScene(forecast, next)
   } catch {
     if (id !== selection) return
     state.forecast = null

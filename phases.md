@@ -27,7 +27,7 @@ vite.config.js            config du serveur de dev
 
 ## Phase 0 — install + page vide
 
-- [ ] Phase 0
+- [x] Phase 0
 
 Résultat : une page locale avec deux zones vides (scène 3D à gauche, panneau à droite), sans données météo.
 
@@ -45,8 +45,8 @@ npm install
 ```
 
 - [x] `npm install three` — déjà fait. `package.json` contient `"three": "0.187.0"` et `node_modules/three` est là. Ça ne crée pas la page
-- [ ] `npm create vite@latest . -- --template vanilla` — crée `index.html`, `src/main.js`, `vite.config.js`. `vanilla` = JavaScript sans React/Vue. Le dossier n'est plus vide : si Vite demande, choisir d'ignorer les fichiers existants, ne pas les supprimer (`phases.md` et `three` restent)
-- [ ] `npm install` — télécharge Vite dans `node_modules`. Si `three` a disparu de `package.json` après le create, relancer `npm install three`
+- [x] `npm create vite@latest . -- --template vanilla` — crée `index.html`, `src/main.js`, `vite.config.js`. `vanilla` = JavaScript sans React/Vue. Le dossier n'est plus vide : si Vite demande, choisir d'ignorer les fichiers existants, ne pas les supprimer (`phases.md` et `three` restent)
+- [x] `npm install` — télécharge Vite dans `node_modules`. Si `three` a disparu de `package.json` après le create, relancer `npm install three`
 - [x] `package.json` contient `vite` et `three`, pas `tailwindcss`
 
 ```html
@@ -65,7 +65,7 @@ npm run build
 ```
 
 - [x] `npm run dev` — ouvre la page en local
-- [ ] `npm run build` — produit le dossier `dist/`, celui qu'on déposera sur GitHub Pages
+- [x] `npm run build` — produit le dossier `dist/`, celui qu'on déposera sur GitHub Pages
 
 ---
 
@@ -229,7 +229,7 @@ Résultat : la pluie penche avec le vent, le ciel change en fondu, et un télép
 
 ## Suivi
 
-- [ ] Phase 0 — page vide, Vite, Tailwind CDN, Three.js installé
+- [x] Phase 0 — page vide, Vite, Tailwind CDN, Three.js installé
 - [x] Phase 1 — recherche de ville et panneau de chiffres
 - [x] Phase 2 — ciel, pluie, neige
 - [x] Phase 3 — globe, favoris, GPS
